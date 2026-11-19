@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Founder Admin Panel — TRADING BOOKS (ARASAN)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #040710;
+      color: #f1f5f9;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+  </style>
+</head>
+<body class="min-h-screen bg-[#040710] text-slate-100 antialiased">
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 hidden max-w-sm px-4 py-3 rounded-2xl bg-slate-900 border border-emerald-500/40 text-xs font-bold text-emerald-200 shadow-2xl"></div>
+
+  <!-- LOGIN GATE -->
+  <main id="loginGate" class="min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-md rounded-3xl bg-[#070C1B] border border-slate-800 p-7 shadow-2xl space-y-6">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></svg>
+        </div>
+        <div>
+          <div class="text-[11px] font-black uppercase tracking-widest text-emerald-400">TRADING BOOKS • ARASAN</div>
+          <h1 class="text-xl font-black text-white">Founder Admin Panel</h1>
+        </div>
+      </div>
+
+      <p class="text-xs text-slate-400 leading-relaxed">
+        Sign in with your authorized Founder Google account (<span class="text-slate-200 font-bold" id="adminEmailHint">levidoss@gmail.com</span>) to view live registered users, progress stats, and manage PRO or suspended accounts.
+      </p>
+
+      <div id="gateError" class="hidden p-3.5 rounded-2xl bg-rose-500/15 border border-rose-500/35 text-xs text-rose-200 leading-relaxed"></div>
+
+      <button id="googleAdminSignInBtn" type="button" class="w-full py-3.5 px-4 rounded-xl bg-white hover:bg-slate-100 text-slate-950 font-extrabold text-sm inline-flex items-center justify-center gap-2.5 shadow-lg transition-colors cursor-pointer">
+        <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.79-.07-1.54-.19-2.27h-11.3v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12.255 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96h-3.98v3.09C3.515 21.3 7.615 24 12.255 24z"/><path fill="#FBBC05" d="M5.525 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.62h-3.98a11.86 11.86 0 0 0 0 10.76l3.98-3.09z"/><path fill="#EA4335" d="M12.255 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C18.205 1.19 15.495 0 12.255 0c-4.64 0-8.74 2.7-10.71 6.62l3.98 3.09c.95-2.85 3.6-4.96 6.73-4.96z"/></svg>
+        <span>Sign in with Google (Founder)</span>
+      </button>
+
+      <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-500">
+        <span>Project: <strong class="text-slate-300">trading-books-arasan</strong></span>
+        <a href="https://trading-books-arasan.web.app/" class="text-blue-400 hover:text-blue-300 font-bold">← Back to Site</a>
+      </div>
+    </div>
+  </main>
+
+  <!-- ADMIN DASHBOARD -->
+  <div id="adminApp" class="hidden min-h-screen flex flex-col">
+    <header class="sticky top-0 z-30 bg-[#070C1B]/95 backdrop-blur-md border-b border-slate-800">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-sm sm:text-base font-black text-white">Founder Admin Panel</span>
+              <span class="px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-[10px] font-black">LIVE FIRESTORE</span>
+            </div>
+            <div class="text-[11px] text-slate-400" id="adminSignedInAs">—</div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <a href="https://trading-books-arasan.web.app/" class="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-bold text-slate-200">Open Site</a>
+          <button id="exportCsvBtn" type="button" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-extrabold text-white cursor-pointer">Export CSV</button>
+          <button id="signOutBtn" type="button" class="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-bold text-rose-300 cursor-pointer">Sign Out</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6 flex-1">
+      <!-- Rules Error Banner (if Firestore denies list) -->
+      <div id="rulesBanner" class="hidden p-4 rounded-2xl bg-amber-500/10 border border-amber-500/35 text-xs text-amber-200 space-y-2">
+        <div class="font-extrabold text-amber-300">Firestore Security Rules Not Deployed Yet</div>
+        <p id="rulesBannerMsg" class="leading-relaxed"></p>
+      </div>
+
+      <!-- KPI Cards -->
+      <section class="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+        <div class="p-4 rounded-2xl bg-[#070C1B] border border-slate-800">
+          <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Users</div>
+          <div id="kpiTotal" class="text-2xl sm:text-3xl font-black text-white mt-1">0</div>
+          <div id="kpiNewToday" class="text-[11px] text-emerald-400 font-bold mt-1">0 joined today</div>
+        </div>
+        <div class="p-4 rounded-2xl bg-[#070C1B] border border-slate-800">
+          <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Google Accounts</div>
+          <div id="kpiGoogle" class="text-2xl sm:text-3xl font-black text-blue-400 mt-1">0</div>
+          <div class="text-[11px] text-slate-400 mt-1">OAuth verified</div>
+        </div>
+        <div class="p-4 rounded-2xl bg-[#070C1B] border border-slate-800">
+          <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Email Accounts</div>
+          <div id="kpiEmail" class="text-2xl sm:text-3xl font-black text-indigo-400 mt-1">0</div>
+          <div class="text-[11px] text-slate-400 mt-1">Password signups</div>
+        </div>
+        <div class="p-4 rounded-2xl bg-[#070C1B] border border-slate-800">
+          <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">PRO / Banned</div>
+          <div class="text-2xl sm:text-3xl font-black mt-1"><span id="kpiPro" class="text-amber-400">0</span> <span class="text-slate-600 text-lg">/</span> <span id="kpiBanned" class="text-rose-400">0</span></div>
+          <div class="text-[11px] text-slate-400 mt-1">Active PRO / Suspended</div>
+        </div>
+        <div class="p-4 rounded-2xl bg-[#070C1B] border border-slate-800 col-span-2 lg:col-span-1">
+          <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Active (24h)</div>
+          <div id="kpiActive24h" class="text-2xl sm:text-3xl font-black text-emerald-400 mt-1">0</div>
+          <div id="kpiTotalChapters" class="text-[11px] text-slate-400 mt-1">0 chapters cleared</div>
+        </div>
+      </section>
+
+      <!-- Search, Filters & Sort -->
+      <section class="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+        <input id="searchInput" type="text" placeholder="Search by name, @username, or email..." class="flex-1 px-4 py-2.5 rounded-xl bg-[#070C1B] border border-slate-800 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500" />
+        <div class="flex flex-wrap items-center gap-2">
+          <div id="filterPills" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            <button data-filter="all" class="filter-btn px-3 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white cursor-pointer">All</button>
+            <button data-filter="google" class="filter-btn px-3 py-2 rounded-xl text-xs font-bold bg-[#070C1B] border border-slate-800 text-slate-400 hover:text-white cursor-pointer">Google</button>
+            <button data-filter="email" class="filter-btn px-3 py-2 rounded-xl text-xs font-bold bg-[#070C1B] border border-slate-800 text-slate-400 hover:text-white cursor-pointer">Email</button>
+            <button data-filter="pro" class="filter-btn px-3 py-2 rounded-xl text-xs font-bold bg-[#070C1B] border border-slate-800 text-slate-400 hover:text-white cursor-pointer">PRO</button>
+            <button data-filter="banned" class="filter-btn px-3 py-2 rounded-xl text-xs font-bold bg-[#070C1B] border border-slate-800 text-slate-400 hover:text-white cursor-pointer">Banned</button>
+          </div>
+          <select id="sortSelect" class="px-3 py-2 rounded-xl bg-[#070C1B] border border-slate-800 text-xs font-bold text-slate-200 focus:outline-none">
+            <option value="lastLoginAt">Sort: Last Active</option>
+            <option value="createdAt">Sort: Newest Joined</option>
+            <option value="xp">Sort: Highest XP</option>
+            <option value="displayName">Sort: Name (A-Z)</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- Users Table -->
+      <section class="rounded-2xl bg-[#070C1B] border border-slate-800 overflow-hidden shadow-xl">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-slate-800 bg-slate-900/80 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                <th class="py-3.5 px-4">User</th>
+                <th class="py-3.5 px-4">Email</th>
+                <th class="py-3.5 px-4">Provider</th>
+                <th class="py-3.5 px-4">Progress</th>
+                <th class="py-3.5 px-4">Joined / Active</th>
+                <th class="py-3.5 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody" class="divide-y divide-slate-800/80 text-xs">
+              <tr><td colspan="6" class="py-12 text-center text-slate-400">Connecting to Cloud Firestore...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- USER INSPECTOR MODAL -->
+  <div id="userModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="w-full max-w-lg rounded-3xl bg-[#070C1B] border border-slate-800 shadow-2xl overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+        <div>
+          <div class="text-[10px] font-black uppercase tracking-widest text-emerald-400">USER INSPECTOR</div>
+          <h3 id="modalUserName" class="text-lg font-black text-white">User</h3>
+        </div>
+        <button id="closeUserModal" type="button" class="w-9 h-9 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 font-bold cursor-pointer">✕</button>
+      </div>
+      <div id="modalBody" class="p-6 space-y-4 text-xs"></div>
+    </div>
+  </div>
+
+  <script>
+    const FIREBASE_CONFIG = {
+      apiKey: "AIzaSyDk7sLUeSSLIpTPy-2mCsjr6FxD7V3j7Ls",
+      authDomain: "trading-books-arasan.firebaseapp.com",
+      projectId: "trading-books-arasan",
+      storageBucket: "trading-books-arasan.firebasestorage.app",
+      messagingSenderId: "984108929047",
+      appId: "1:984108929047:web:452dc57ea3ca957e678c52",
+      measurementId: "G-11XHRTS7B9"
+    };
+
+    const ADMIN_EMAILS = ["levidoss@gmail.com"];
+
+    const app = firebase.initializeApp(FIREBASE_CONFIG);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    let allUsers = [];
+    let activeFilter = "all";
+    let unsubUsers = null;
+    let pendingDeleteUid = null;
+
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s || "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+
+    function showToast(msg) {
+      const el = $("toast");
+      el.textContent = msg;
+      el.classList.remove("hidden");
+      clearTimeout(el._t);
+      el._t = setTimeout(() => el.classList.add("hidden"), 3200);
+    }
+
+    function isAdmin(email) {
+      const clean = String(email || "").trim().toLowerCase();
+      return Boolean(clean && ADMIN_EMAILS.some(e => e.toLowerCase() === clean));
+    }
+
+    function formatDate(iso) {
+      if (!iso) return "—";
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return "—";
+      return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+    }
+
+    function formatAgo(iso) {
+      if (!iso) return "—";
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return "—";
+      const mins = Math.floor((Date.now() - d.getTime()) / 60000);
+      if (mins < 1) return "Just now";
+      if (mins < 60) return mins + "m ago";
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return hrs + "h ago";
+      return formatDate(iso);
+    }
+
+    function updateKPIs() {
+      const now = Date.now();
+      const dayMs = 24 * 60 * 60 * 1000;
+      const total = allUsers.length;
+      const newToday = allUsers.filter(u => u.createdAt && (now - new Date(u.createdAt).getTime()) <= dayMs).length;
+      const google = allUsers.filter(u => u.authProvider === "google" || u.authProvider === "both").length;
+      const email = allUsers.filter(u => u.authProvider === "email").length;
+      const pro = allUsers.filter(u => u.isProMember).length;
+      const banned = allUsers.filter(u => u.isBanned).length;
+      const active24h = allUsers.filter(u => u.lastLoginAt && (now - new Date(u.lastLoginAt).getTime()) <= dayMs).length;
+      const totalChapters = allUsers.reduce((acc, u) => acc + (Number(u.chaptersCompleted) || 0), 0);
+
+      $("kpiTotal").textContent = total;
+      $("kpiNewToday").textContent = newToday + " joined today";
+      $("kpiGoogle").textContent = google;
+      $("kpiEmail").textContent = email;
+      $("kpiPro").textContent = pro;
+      $("kpiBanned").textContent = banned;
+      $("kpiActive24h").textContent = active24h;
+      $("kpiTotalChapters").textContent = totalChapters + " chapters cleared";
+    }
+
+    function getFilteredUsers() {
+      const q = $("searchInput").value.trim().toLowerCase();
+      const sortBy = $("sortSelect").value;
+      const list = allUsers.filter(u => {
+        if (activeFilter === "google" && !(u.authProvider === "google" || u.authProvider === "both")) return false;
+        if (activeFilter === "email" && u.authProvider !== "email") return false;
+        if (activeFilter === "pro" && !u.isProMember) return false;
+        if (activeFilter === "banned" && !u.isBanned) return false;
+        if (!q) return true;
+        return (
+          String(u.displayName || "").toLowerCase().includes(q) ||
+          String(u.username || "").toLowerCase().includes(q) ||
+          String(u.email || "").toLowerCase().includes(q)
+        );
+      });
+
+      list.sort((a, b) => {
+        if (sortBy === "xp") return (Number(b.xp) || 0) - (Number(a.xp) || 0);
+        if (sortBy === "displayName") return String(a.displayName || "").localeCompare(String(b.displayName || ""));
+        return String(b[sortBy] || "").localeCompare(String(a[sortBy] || ""));
+      });
+      return list;
+    }
+
+    function renderTable() {
+      const tbody = $("usersTableBody");
+      const list = getFilteredUsers();
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="py-12 text-center text-slate-400">No users match the current filter.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = list.map(u => {
+        const avatar = u.avatarDataUrl
+          ? `<img src="${esc(u.avatarDataUrl)}" alt="" class="w-full h-full object-cover" />`
+          : esc(String(u.displayName || "T").slice(0, 1).toUpperCase());
+        const isGoogle = u.authProvider === "google" || u.authProvider === "both";
+        return `
+          <tr class="hover:bg-slate-900/60 transition-colors">
+            <td class="py-3.5 px-4">
+              <div class="flex items-center gap-3">
+                <span class="w-9 h-9 rounded-full p-[1.5px] bg-gradient-to-tr ${esc(u.avatarColor || 'from-blue-500 to-emerald-400')} shrink-0">
+                  <span class="w-full h-full rounded-full bg-[#060B18] flex items-center justify-center text-white font-black text-xs overflow-hidden">${avatar}</span>
+                </span>
+                <div class="min-w-0">
+                  <div class="font-extrabold text-white flex items-center gap-1.5 flex-wrap">
+                    <span>${esc(u.displayName || "Trader")}</span>
+                    ${isAdmin(u.email) ? '<span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[9px] font-black">ADMIN</span>' : ''}
+                    ${u.isProMember ? '<span class="px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-300 text-[9px] font-black">PRO</span>' : ''}
+                    ${u.isBanned ? '<span class="px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 text-[9px] font-black">BANNED</span>' : ''}
+                  </div>
+                  <div class="text-[11px] text-slate-400">${u.username ? '@' + esc(u.username) : 'No username'} • ${esc(u.traderTag || 'Beginner')}</div>
+                </div>
+              </div>
+            </td>
+            <td class="py-3.5 px-4">
+              <div class="text-slate-200 font-medium">${esc(u.email)}</div>
+              <div class="text-[10px] ${u.emailVerified ? 'text-emerald-400' : 'text-amber-400'}">${u.emailVerified ? 'Verified' : 'Unverified'}</div>
+            </td>
+            <td class="py-3.5 px-4">
+              <span class="px-2.5 py-1 rounded-full text-[11px] font-bold ${isGoogle ? 'bg-blue-500/15 text-blue-300 border border-blue-500/30' : 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30'}">
+                ${isGoogle ? 'Google' : 'Email'}
+              </span>
+            </td>
+            <td class="py-3.5 px-4">
+              <div class="font-extrabold text-white">LVL ${Number(u.level) || 1} • ${Number(u.xp) || 0} XP</div>
+              <div class="text-[11px] text-slate-400">${Number(u.chaptersCompleted) || 0} chapters cleared</div>
+            </td>
+            <td class="py-3.5 px-4 whitespace-nowrap">
+              <div class="text-slate-200 font-semibold">${formatAgo(u.lastLoginAt)}</div>
+              <div class="text-[10px] text-slate-500">Joined ${formatDate(u.createdAt)}</div>
+            </td>
+            <td class="py-3.5 px-4 text-right whitespace-nowrap space-x-1.5">
+              <button data-action="pro" data-uid="${esc(u.uid)}" class="px-2.5 py-1.5 rounded-lg text-[11px] font-bold border cursor-pointer ${u.isProMember ? 'bg-amber-400/20 border-amber-400/40 text-amber-300' : 'bg-slate-900 border-slate-700 text-slate-300 hover:text-white'}">${u.isProMember ? 'Revoke PRO' : 'Grant PRO'}</button>
+              ${!isAdmin(u.email) ? `<button data-action="ban" data-uid="${esc(u.uid)}" class="px-2.5 py-1.5 rounded-lg text-[11px] font-bold border cursor-pointer ${u.isBanned ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300' : 'bg-rose-500/15 border-rose-500/35 text-rose-300'}">${u.isBanned ? 'Unban' : 'Ban'}</button>` : ''}
+              <button data-action="inspect" data-uid="${esc(u.uid)}" class="px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 cursor-pointer">Details</button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function openUserModal(uid) {
+      const u = allUsers.find(x => x.uid === uid);
+      if (!u) return;
+      pendingDeleteUid = null;
+      $("modalUserName").textContent = u.displayName + (u.username ? " (@" + u.username + ")" : "");
+      $("modalBody").innerHTML = `
+        <div class="grid grid-cols-2 gap-3">
+          <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800"><div class="text-slate-400 text-[10px] uppercase font-bold">Email</div><div class="text-white font-semibold mt-0.5 break-all">${esc(u.email)}</div></div>
+          <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800"><div class="text-slate-400 text-[10px] uppercase font-bold">Provider</div><div class="text-white font-semibold mt-0.5 uppercase">${esc(u.authProvider)}</div></div>
+          <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800"><div class="text-slate-400 text-[10px] uppercase font-bold">Progress</div><div class="text-emerald-400 font-bold mt-0.5">LVL ${Number(u.level)||1} • ${Number(u.xp)||0} XP (${Number(u.chaptersCompleted)||0} ch)</div></div>
+          <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800"><div class="text-slate-400 text-[10px] uppercase font-bold">Joined / Last Active</div><div class="text-white font-semibold mt-0.5">${formatDate(u.createdAt)} / ${formatAgo(u.lastLoginAt)}</div></div>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+          <div class="text-slate-400 text-[10px] uppercase font-bold">Firebase UID</div>
+          <div class="text-slate-300 font-mono text-[11px] mt-0.5 break-all">${esc(u.uid)}</div>
+        </div>
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800">
+          <button id="resetProgBtn" data-uid="${esc(u.uid)}" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold cursor-pointer">Reset User XP & Progress</button>
+          ${!isAdmin(u.email) ? `<button id="deleteDocBtn" data-uid="${esc(u.uid)}" class="px-3.5 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/35 text-rose-300 font-bold cursor-pointer">Delete User Record</button>` : ''}
+        </div>
+      `;
+      $("userModal").classList.remove("hidden");
+
+      const resetBtn = $("resetProgBtn");
+      if (resetBtn) {
+        resetBtn.onclick = async () => {
+          await db.collection("users").doc(u.uid).set({ xp: 0, level: 1, bonusXp: 0, chaptersCompleted: 0, bookProgress: {}, updatedAt: new Date().toISOString() }, { merge: true });
+          showToast("Reset progress for " + u.displayName);
+          $("userModal").classList.add("hidden");
+        };
+      }
+      const delBtn = $("deleteDocBtn");
+      if (delBtn) {
+        delBtn.onclick = async () => {
+          if (pendingDeleteUid !== u.uid) {
+            pendingDeleteUid = u.uid;
+            delBtn.textContent = "Click again to confirm delete";
+            return;
+          }
+          if (u.username) { try { await db.collection("usernames").doc(u.username).delete(); } catch (e) {} }
+          await db.collection("users").doc(u.uid).delete();
+          showToast("Deleted user record for " + u.displayName);
+          $("userModal").classList.add("hidden");
+        };
+      }
+    }
+
+    $("usersTableBody").addEventListener("click", async (e) => {
+      const btn = e.target.closest("button[data-action]");
+      if (!btn) return;
+      const action = btn.dataset.action;
+      const uid = btn.dataset.uid;
+      const u = allUsers.find(x => x.uid === uid);
+      if (!u) return;
+
+      try {
+        if (action === "pro") {
+          const next = !u.isProMember;
+          await db.collection("users").doc(uid).set({ isProMember: next, updatedAt: new Date().toISOString() }, { merge: true });
+          showToast((next ? "Granted PRO to " : "Revoked PRO from ") + u.displayName);
+        } else if (action === "ban") {
+          const next = !u.isBanned;
+          await db.collection("users").doc(uid).set({ isBanned: next, updatedAt: new Date().toISOString() }, { merge: true });
+          showToast((next ? "Suspended " : "Unbanned ") + u.displayName);
+        } else if (action === "inspect") {
+          openUserModal(uid);
+        }
+      } catch (err) {
+        showToast("Action failed: " + (err.message || "Permission denied"));
+      }
+    });
+
+    $("closeUserModal").onclick = () => $("userModal").classList.add("hidden");
+    $("userModal").onclick = (e) => { if (e.target === $("userModal")) $("userModal").classList.add("hidden"); };
+    $("searchInput").oninput = renderTable;
+    $("sortSelect").onchange = renderTable;
+
+    document.querySelectorAll(".filter-btn").forEach(btn => {
+      btn.onclick = () => {
+        activeFilter = btn.dataset.filter;
+        document.querySelectorAll(".filter-btn").forEach(b => {
+          const active = b.dataset.filter === activeFilter;
+          b.className = active
+            ? "filter-btn px-3 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white cursor-pointer"
+            : "filter-btn px-3 py-2 rounded-xl text-xs font-bold bg-[#070C1B] border border-slate-800 text-slate-400 hover:text-white cursor-pointer";
+        });
+        renderTable();
+      };
+    });
+
+    $("exportCsvBtn").onclick = () => {
+      const list = getFilteredUsers();
+      const rows = [["Name", "Username", "Email", "Provider", "Level", "XP", "Chapters", "PRO", "Banned", "Joined", "Last Active"]];
+      list.forEach(u => {
+        rows.push([
+          u.displayName || "",
+          u.username ? "@" + u.username : "",
+          u.email || "",
+          u.authProvider || "email",
+          String(u.level || 1),
+          String(u.xp || 0),
+          String(u.chaptersCompleted || 0),
+          u.isProMember ? "Yes" : "No",
+          u.isBanned ? "Yes" : "No",
+          u.createdAt || "",
+          u.lastLoginAt || ""
+        ]);
+      });
+      const csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "trading_books_users_" + new Date().toISOString().slice(0, 10) + ".csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast("Exported " + list.length + " users to CSV.");
+    };
+
+    $("googleAdminSignInBtn").onclick = async () => {
+      $("gateError").classList.add("hidden");
+      try {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: "select_account" });
+        await auth.signInWithPopup(provider);
+      } catch (err) {
+        $("gateError").textContent = err && err.message ? err.message : "Google Sign-In failed.";
+        $("gateError").classList.remove("hidden");
+      }
+    };
+
+    $("signOutBtn").onclick = async () => {
+      if (unsubUsers) { unsubUsers(); unsubUsers = null; }
+      await auth.signOut();
+    };
+
+    function subscribeToUsers() {
+      if (unsubUsers) unsubUsers();
+      $("rulesBanner").classList.add("hidden");
+      unsubUsers = db.collection("users").onSnapshot((snap) => {
+        allUsers = [];
+        snap.forEach(doc => {
+          const d = doc.data() || {};
+          allUsers.push({ ...d, uid: d.uid || doc.id });
+        });
+        updateKPIs();
+        renderTable();
+      }, (err) => {
+        $("rulesBannerMsg").textContent = "Firestore returned: " + (err.message || "permission-denied") + ". Run 'firebase deploy' so your firestore.rules file is published to trading-books-arasan.";
+        $("rulesBanner").classList.remove("hidden");
+        $("usersTableBody").innerHTML = '<tr><td colspan="6" class="py-12 text-center text-amber-300">Waiting for firestore.rules deployment...</td></tr>';
+      });
+    }
+
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        if (unsubUsers) { unsubUsers(); unsubUsers = null; }
+        $("adminApp").classList.add("hidden");
+        $("loginGate").classList.remove("hidden");
+        return;
+      }
+      if (!isAdmin(user.email)) {
+        await auth.signOut();
+        $("gateError").textContent = `Access Denied: "${user.email}" is not authorized as an Admin. Sign in with ${ADMIN_EMAILS.join(", ")}.`;
+        $("gateError").classList.remove("hidden");
+        $("adminApp").classList.add("hidden");
+        $("loginGate").classList.remove("hidden");
+        return;
+      }
+      $("adminSignedInAs").textContent = "Signed in as " + user.email;
+      $("loginGate").classList.add("hidden");
+      $("adminApp").classList.remove("hidden");
+      subscribeToUsers();
+    });
+  </script>
+</body>
+</html>
